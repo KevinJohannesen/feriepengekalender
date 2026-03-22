@@ -58,11 +58,9 @@ export default function FeriepengekalenderPage() {
   )
   const monthlyGrossSalary = Math.round(annualSalary / 12)
 
-  // Total working hours
-  const totalWorkingHours = totalWorkingDays * hoursPerDay
-
-  // Working days excluding vacation
-  const workingDaysExclVacation = totalWorkingDays - effectiveVacationDays
+  const totalWeekdays = totalWorkingDays + totalHolidaysOnWeekdays
+  const actualWorkingDays = totalWorkingDays - effectiveVacationDays
+  const actualWorkingHours = actualWorkingDays * hoursPerDay
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -343,12 +341,18 @@ export default function FeriepengekalenderPage() {
                 Arbeidsdager {year}
               </p>
               <p className="mt-1 text-3xl font-bold text-stone-800">
-                {totalWorkingDays} dager
+                {actualWorkingDays} dager
               </p>
-              <p className="mt-2 text-xs text-rose-500">
-                {totalHolidaysOnWeekdays} helligdag
-                {totalHolidaysOnWeekdays !== 1 && 'er'} på hverdager
-              </p>
+              <div className="mt-3 space-y-0.5 text-xs text-stone-400">
+                <p>{totalWeekdays} hverdager i {year}</p>
+                <p className="text-rose-500">
+                  &minus; {totalHolidaysOnWeekdays} helligdag{totalHolidaysOnWeekdays !== 1 && 'er'} på hverdager
+                </p>
+                <p>&minus; {effectiveVacationDays} feriedager</p>
+                <p className="font-semibold text-stone-600">
+                  = {actualWorkingDays} dager du faktisk jobber
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -362,10 +366,10 @@ export default function FeriepengekalenderPage() {
                 Arbeidstimer {year}
               </p>
               <p className="mt-1 text-3xl font-bold text-stone-800">
-                {formatNumber(totalWorkingHours)} timer
+                {formatNumber(actualWorkingHours)} timer
               </p>
-              <p className="mt-2 text-xs text-stone-400">
-                {formatNumber(hoursPerDay)} t/dag
+              <p className="mt-3 text-xs text-stone-400">
+                {actualWorkingDays} dager &times; {formatNumber(hoursPerDay)} t/dag
               </p>
             </CardContent>
           </Card>
@@ -387,20 +391,6 @@ export default function FeriepengekalenderPage() {
               </p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Working days excluding vacation */}
-        <div className="mb-8 rounded-lg bg-white border border-stone-200 px-4 py-3 text-center shadow-sm">
-          <p className="text-sm text-stone-600">
-            Antall arbeidsdager ekskl. dine{' '}
-            <span className="font-semibold text-emerald-600">
-              {effectiveVacationDays} feriedager
-            </span>
-            :{' '}
-            <span className="font-bold text-stone-800">
-              {workingDaysExclVacation} dager
-            </span>
-          </p>
         </div>
 
         {/* Year Calendar */}
