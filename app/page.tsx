@@ -37,9 +37,10 @@ export default function FeriepengekalenderPage() {
   const [vacationPayMonth, setVacationPayMonth] = useState(5) // June (0-indexed)
   const [salaryDeducted, setSalaryDeducted] = useState(true)
 
-  // Derived calculations
+  // Vacation pay percent (user-overridable, synced with days & over-60)
+  const [vacationPayPercent, setVacationPayPercent] = useState(12.0)
+
   const effectiveVacationDays = isOver60 ? 30 : vacationDays
-  const vacationPayPercent = isOver60 ? 12.5 : 10.2
   const effectiveHoursPerWeek =
     hoursPerWeek === 'custom' ? customHours : hoursPerWeek
   const hoursPerDay = (effectiveHoursPerWeek / 5) * (positionPercent / 100)
@@ -174,15 +175,18 @@ export default function FeriepengekalenderPage() {
                 <Input
                   type="number"
                   value={isOver60 ? 30 : vacationDays}
-                  onChange={(e) =>
-                    setVacationDays(parseInt(e.target.value) || 25)
-                  }
-                  min={25}
+                  onChange={(e) => {
+                    const days = parseInt(e.target.value) || 25
+                    setVacationDays(days)
+                    if (days <= 21) setVacationPayPercent(10.2)
+                    else if (days >= 25) setVacationPayPercent(12.0)
+                  }}
+                  min={21}
                   max={30}
                   disabled={isOver60}
                 />
                 <p className="text-xs text-stone-400">
-                  Lovpålagt minimum er 25 dager (5 uker)
+                  21 dager (4 uker + 1 dag) eller 25 dager (5 uker)
                 </p>
               </div>
 
@@ -197,7 +201,14 @@ export default function FeriepengekalenderPage() {
                 <Switch
                   id="over60"
                   checked={isOver60}
-                  onCheckedChange={setIsOver60}
+                  onCheckedChange={(checked) => {
+                    setIsOver60(checked)
+                    if (checked) {
+                      setVacationPayPercent(12.5)
+                    } else {
+                      setVacationPayPercent(vacationDays <= 21 ? 10.2 : 12.0)
+                    }
+                  }}
                 />
               </div>
             </CardContent>
@@ -255,17 +266,27 @@ export default function FeriepengekalenderPage() {
               </div>
 
               {/* Vacation pay percent */}
-              <div className="rounded-lg bg-stone-50 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-stone-600">
-                    Feriepengeprosent
-                  </span>
-                  <span className="font-semibold text-stone-800">
-                    {vacationPayPercent}%
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-stone-400">
-                  {isOver60 ? '12,5% for arbeidstakere over 60 år' : '10,2% for arbeidstakere under 60 år'}
+              <div className="space-y-2">
+                <Label htmlFor="vacationPayPercent">Feriepengeprosent</Label>
+                <Select
+                  value={vacationPayPercent.toString()}
+                  onValueChange={(v) => setVacationPayPercent(parseFloat(v))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10.2">10,2% — 4 uker + 1 dag</SelectItem>
+                    <SelectItem value="12">12,0% — 5 uker (avtalefestet)</SelectItem>
+                    <SelectItem value="12.5">12,5% — over 60 år</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-stone-400">
+                  {vacationPayPercent === 10.2
+                    ? 'Gjelder kun ved 4 uker + 1 dag ferie'
+                    : vacationPayPercent === 12.5
+                      ? 'Gjelder arbeidstakere over 60 år med 5 ukers ferie'
+                      : 'Gjelder ved avtale om 5 ukers ferie — de fleste norske arbeidsgivere'}
                 </p>
               </div>
 
