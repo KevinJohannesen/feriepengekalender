@@ -1,65 +1,430 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useMemo } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { MonthCalendar } from '@/components/month-calendar'
+import { BudgetChart } from '@/components/budget-chart'
+import { WorkdaysTable } from '@/components/workdays-table'
+import {
+  getNorwegianHolidays,
+  getWorkingDaysInYear,
+  MONTH_NAMES,
+} from '@/lib/holidays'
+import { CalendarDays, Clock, Banknote } from 'lucide-react'
+
+export default function FeriepengekalenderPage() {
+  // Work settings
+  const [year, setYear] = useState(2026)
+  const [hoursPerWeek, setHoursPerWeek] = useState<number | 'custom'>(37.5)
+  const [customHours, setCustomHours] = useState(37.5)
+  const [positionPercent, setPositionPercent] = useState(100)
+  const [vacationDays, setVacationDays] = useState(25)
+  const [isOver60, setIsOver60] = useState(false)
+
+  // Vacation pay settings
+  const [annualSalary, setAnnualSalary] = useState(600000)
+  const [vacationPayBase, setVacationPayBase] = useState<number | null>(null)
+  const [vacationPayMonth, setVacationPayMonth] = useState(5) // June (0-indexed)
+  const [salaryDeducted, setSalaryDeducted] = useState(true)
+
+  // Derived calculations
+  const effectiveVacationDays = isOver60 ? 30 : vacationDays
+  const vacationPayPercent = isOver60 ? 12.5 : 10.2
+  const effectiveHoursPerWeek =
+    hoursPerWeek === 'custom' ? customHours : hoursPerWeek
+  const hoursPerDay = (effectiveHoursPerWeek / 5) * (positionPercent / 100)
+
+  const holidays = useMemo(() => getNorwegianHolidays(year), [year])
+  const { totalWorkingDays, totalHolidaysOnWeekdays } = useMemo(
+    () => getWorkingDaysInYear(year, holidays),
+    [year, holidays]
+  )
+
+  // Calculate vacation pay
+  const effectiveVacationPayBase = vacationPayBase ?? annualSalary
+  const vacationPay = Math.round(
+    effectiveVacationPayBase * (vacationPayPercent / 100)
+  )
+  const monthlyGrossSalary = Math.round(annualSalary / 12)
+
+  // Total working hours
+  const totalWorkingHours = totalWorkingDays * hoursPerDay
+
+  // Working days excluding vacation
+  const workingDaysExclVacation = totalWorkingDays - effectiveVacationDays
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('nb-NO', {
+      style: 'decimal',
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  // Format number with thousands separator
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('nb-NO', {
+      maximumFractionDigits: 1,
+    }).format(num)
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-[#FAFAF8]">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-stone-800 sm:text-4xl">
+            Feriepengekalender
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-2 text-stone-500">
+            Beregn arbeidsdager, timer og feriepenger for året
+          </p>
+        </header>
+
+        {/* Input Sections */}
+        <div className="mb-8 grid gap-6 lg:grid-cols-2">
+          {/* Section 1: Work Settings */}
+          <Card className="border-stone-200 bg-white shadow-sm">
+            <CardContent className="space-y-5">
+              <h2 className="text-lg font-semibold text-stone-800">
+                Arbeidsinnstillinger
+              </h2>
+
+              {/* Year */}
+              <div className="space-y-2">
+                <Label htmlFor="year">År</Label>
+                <Select
+                  value={year.toString()}
+                  onValueChange={(v) => setYear(parseInt(v))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2024">2024</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
+                    <SelectItem value="2026">2026</SelectItem>
+                    <SelectItem value="2027">2027</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Hours per week */}
+              <div className="space-y-2">
+                <Label htmlFor="hours">Timer per uke</Label>
+                <Select
+                  value={hoursPerWeek.toString()}
+                  onValueChange={(v) =>
+                    setHoursPerWeek(v === 'custom' ? 'custom' : parseFloat(v))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="37.5">37,5 (standard)</SelectItem>
+                    <SelectItem value="40">40</SelectItem>
+                    <SelectItem value="custom">Egendefinert</SelectItem>
+                  </SelectContent>
+                </Select>
+                {hoursPerWeek === 'custom' && (
+                  <Input
+                    type="number"
+                    value={customHours}
+                    onChange={(e) => setCustomHours(parseFloat(e.target.value) || 0)}
+                    min={1}
+                    max={60}
+                    step={0.5}
+                    className="mt-2"
+                  />
+                )}
+              </div>
+
+              {/* Position percent */}
+              <div className="space-y-2">
+                <Label htmlFor="position">Stillingsprosent</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={positionPercent}
+                    onChange={(e) =>
+                      setPositionPercent(parseFloat(e.target.value) || 0)
+                    }
+                    min={1}
+                    max={100}
+                    className="w-24"
+                  />
+                  <span className="text-stone-500">%</span>
+                </div>
+              </div>
+
+              {/* Vacation days */}
+              <div className="space-y-2">
+                <Label htmlFor="vacationDays">Antall feriedager</Label>
+                <Input
+                  type="number"
+                  value={isOver60 ? 30 : vacationDays}
+                  onChange={(e) =>
+                    setVacationDays(parseInt(e.target.value) || 25)
+                  }
+                  min={25}
+                  max={30}
+                  disabled={isOver60}
+                />
+                <p className="text-xs text-stone-400">
+                  Lovpålagt minimum er 25 dager (5 uker)
+                </p>
+              </div>
+
+              {/* Over 60 toggle */}
+              <div className="flex items-center justify-between rounded-lg bg-stone-50 p-3">
+                <div>
+                  <Label htmlFor="over60" className="cursor-pointer">
+                    Over 60 år
+                  </Label>
+                  <p className="text-xs text-stone-400">6. ferieuke = 30 dager</p>
+                </div>
+                <Switch
+                  id="over60"
+                  checked={isOver60}
+                  onCheckedChange={setIsOver60}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 2: Vacation Pay Settings */}
+          <Card className="border-stone-200 bg-white shadow-sm">
+            <CardContent className="space-y-5">
+              <h2 className="text-lg font-semibold text-stone-800">
+                Feriepenger
+              </h2>
+
+              {/* Annual salary */}
+              <div className="space-y-2">
+                <Label htmlFor="salary">Årslønn (brutto)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={formatCurrency(annualSalary)}
+                    onChange={(e) => {
+                      const num = parseInt(e.target.value.replace(/\s/g, '')) || 0
+                      setAnnualSalary(num)
+                    }}
+                    className="flex-1"
+                  />
+                  <span className="text-stone-500">kr</span>
+                </div>
+              </div>
+
+              {/* Vacation pay base */}
+              <div className="space-y-2">
+                <Label htmlFor="vacationPayBase">
+                  Feriepengegrunnlag forrige år
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder={formatCurrency(annualSalary)}
+                    value={
+                      vacationPayBase !== null
+                        ? formatCurrency(vacationPayBase)
+                        : ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\s/g, '')
+                      setVacationPayBase(val ? parseInt(val) || null : null)
+                    }}
+                    className="flex-1"
+                  />
+                  <span className="text-stone-500">kr</span>
+                </div>
+                <p className="text-xs text-stone-400">
+                  Feriepenger beregnes av fjorårets inntekt
+                </p>
+              </div>
+
+              {/* Vacation pay percent */}
+              <div className="rounded-lg bg-stone-50 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-stone-600">
+                    Feriepengeprosent
+                  </span>
+                  <span className="font-semibold text-stone-800">
+                    {vacationPayPercent}%
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-stone-400">
+                  {isOver60 ? '12,5% for arbeidstakere over 60 år' : '10,2% for arbeidstakere under 60 år'}
+                </p>
+              </div>
+
+              {/* Payout month */}
+              <div className="space-y-2">
+                <Label htmlFor="payoutMonth">Utbetalingsmåned</Label>
+                <Select
+                  value={vacationPayMonth.toString()}
+                  onValueChange={(v) => setVacationPayMonth(parseInt(v))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTH_NAMES.map((name, i) => (
+                      <SelectItem key={i} value={i.toString()}>
+                        {name}
+                        {i === 5 && ' (vanlig)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Salary deducted toggle */}
+              <div className="flex items-center justify-between rounded-lg bg-stone-50 p-3">
+                <div>
+                  <Label htmlFor="salaryDeducted" className="cursor-pointer">
+                    Trekkes lønn i ferietiden?
+                  </Label>
+                  <p className="text-xs text-stone-400">
+                    De fleste får ikke lønn i juli
+                  </p>
+                </div>
+                <Switch
+                  id="salaryDeducted"
+                  checked={salaryDeducted}
+                  onCheckedChange={setSalaryDeducted}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Hero Output - Metric Cards */}
+        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+          {/* Working Days Card */}
+          <Card className="border-stone-200 bg-white shadow-sm">
+            <CardContent className="flex flex-col items-center p-6 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                <CalendarDays className="h-6 w-6 text-emerald-600" />
+              </div>
+              <p className="text-sm font-medium text-stone-500">
+                Arbeidsdager {year}
+              </p>
+              <p className="mt-1 text-3xl font-bold text-stone-800">
+                {totalWorkingDays} dager
+              </p>
+              <p className="mt-2 text-xs text-rose-500">
+                {totalHolidaysOnWeekdays} helligdag
+                {totalHolidaysOnWeekdays !== 1 && 'er'} på hverdager
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Working Hours Card */}
+          <Card className="border-stone-200 bg-white shadow-sm">
+            <CardContent className="flex flex-col items-center p-6 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <p className="text-sm font-medium text-stone-500">
+                Arbeidstimer {year}
+              </p>
+              <p className="mt-1 text-3xl font-bold text-stone-800">
+                {formatNumber(totalWorkingHours)} timer
+              </p>
+              <p className="mt-2 text-xs text-stone-400">
+                {formatNumber(hoursPerDay)} t/dag
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Vacation Pay Card */}
+          <Card className="border-stone-200 bg-white shadow-sm">
+            <CardContent className="flex flex-col items-center p-6 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                <Banknote className="h-6 w-6 text-amber-600" />
+              </div>
+              <p className="text-sm font-medium text-stone-500">
+                Feriepenger utbetales
+              </p>
+              <p className="mt-1 text-3xl font-bold text-stone-800">
+                {formatCurrency(vacationPay)} kr
+              </p>
+              <p className="mt-2 text-xs text-amber-600">
+                {MONTH_NAMES[vacationPayMonth]} {year}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Working days excluding vacation */}
+        <div className="mb-8 rounded-lg bg-white border border-stone-200 px-4 py-3 text-center shadow-sm">
+          <p className="text-sm text-stone-600">
+            Antall arbeidsdager ekskl. dine{' '}
+            <span className="font-semibold text-emerald-600">
+              {effectiveVacationDays} feriedager
+            </span>
+            :{' '}
+            <span className="font-bold text-stone-800">
+              {workingDaysExclVacation} dager
+            </span>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        {/* Year Calendar */}
+        <section className="mb-8">
+          <h2 className="mb-4 text-xl font-semibold text-stone-800">
+            Årskalender {year}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 12 }, (_, month) => (
+              <MonthCalendar
+                key={month}
+                year={year}
+                month={month}
+                holidays={holidays}
+                vacationPayMonth={vacationPayMonth}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Budget Chart */}
+        <section className="mb-8">
+          <BudgetChart
+            monthlyGrossSalary={monthlyGrossSalary}
+            vacationPay={vacationPay}
+            vacationPayMonth={vacationPayMonth}
+            salaryDeductedInVacation={salaryDeducted}
+            vacationMonth={6} // July
+          />
+        </section>
+
+        {/* Workdays Table */}
+        <section className="mb-8">
+          <WorkdaysTable
+            year={year}
+            holidays={holidays}
+            hoursPerDay={hoursPerDay}
+          />
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-12 border-t border-stone-200 pt-6 text-center text-sm text-stone-400">
+          <p>Norsk feriepengekalender — alle beregninger er veiledende</p>
+        </footer>
+      </div>
     </div>
-  );
+  )
 }
