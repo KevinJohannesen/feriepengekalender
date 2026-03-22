@@ -1,60 +1,20 @@
-// Norwegian holidays calculation
+import Holidays from 'date-holidays'
 
 export interface Holiday {
   date: Date
   name: string
 }
 
-// Calculate Easter Sunday using Gauss algorithm
-function getEasterSunday(year: number): Date {
-  const a = year % 19
-  const b = Math.floor(year / 100)
-  const c = year % 100
-  const d = Math.floor(b / 4)
-  const e = b % 4
-  const f = Math.floor((b + 8) / 25)
-  const g = Math.floor((b - f + 1) / 3)
-  const h = (19 * a + b - d - g + 15) % 30
-  const i = Math.floor(c / 4)
-  const k = c % 4
-  const l = (32 + 2 * e + 2 * i - h - k) % 7
-  const m = Math.floor((a + 11 * h + 22 * l) / 451)
-  const month = Math.floor((h + l - 7 * m + 114) / 31)
-  const day = ((h + l - 7 * m + 114) % 31) + 1
-
-  return new Date(year, month - 1, day)
-}
-
-// Add days to a date
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
-
-// Get all Norwegian holidays for a given year
 export function getNorwegianHolidays(year: number): Holiday[] {
-  const easter = getEasterSunday(year)
-
-  const holidays: Holiday[] = [
-    // Fixed holidays
-    { date: new Date(year, 0, 1), name: 'Nyttårsdag' },
-    { date: new Date(year, 4, 1), name: 'Arbeidernes dag' },
-    { date: new Date(year, 4, 17), name: 'Grunnlovsdag' },
-    { date: new Date(year, 11, 25), name: '1. juledag' },
-    { date: new Date(year, 11, 26), name: '2. juledag' },
-
-    // Movable holidays based on Easter
-    { date: addDays(easter, -3), name: 'Skjærtorsdag' },
-    { date: addDays(easter, -2), name: 'Langfredag' },
-    { date: easter, name: '1. påskedag' },
-    { date: addDays(easter, 1), name: '2. påskedag' },
-    { date: addDays(easter, 39), name: 'Kristi himmelfartsdag' },
-    { date: addDays(easter, 49), name: '1. pinsedag' },
-    { date: addDays(easter, 50), name: '2. pinsedag' },
-  ]
-
-  return holidays.sort((a, b) => a.date.getTime() - b.date.getTime())
+  const hd = new Holidays('NO')
+  return hd
+    .getHolidays(year)
+    .filter((h) => h.type === 'public')
+    .map((h) => ({
+      date: new Date(h.date.split(' ')[0]),
+      name: h.name,
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
 }
 
 // Check if a date is a holiday
