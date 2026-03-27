@@ -8,9 +8,6 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 export const metadata: Metadata = {
   title: 'Feriepengekalender | Norsk årskalender',
   description: 'Beregn arbeidsdager, arbeidstimer og feriepenger for det norske arbeidsåret. Se helligdager og planlegg budsjettet.',
-  icons: {
-    icon: '/icon.svg',
-  },
 }
 
 export default function RootLayout({

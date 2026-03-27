@@ -1,6 +1,13 @@
-# Feriepengekalender
+<p align="center">
+  <img src="public/icon.png" alt="Feriepengekalender" width="120" />
+</p>
 
-Norsk årskalender som beregner arbeidsdager, arbeidstimer og feriepenger. Helligdager hentes automatisk via [date-holidays](https://github.com/commenthol/date-holidays) og er korrekte for ethvert år.
+<h1 align="center">Feriepengekalender</h1>
+
+<p align="center">
+  Norsk årskalender som beregner arbeidsdager, arbeidstimer og feriepenger.<br>
+  Helligdager hentes automatisk via <a href="https://github.com/commenthol/date-holidays">date-holidays</a> og er korrekte for ethvert år.
+</p>
 
 ## Funksjoner
 
